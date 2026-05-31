@@ -1,28 +1,39 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Everything ignored by default - files must be explicitly NOT ignored
+*
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+!.pre-commit-config.yaml
+!.github/
+!.github/workflows/
+!.github/workflows/ci.yml
+!.github/workflows/publish.yml
+!.github/workflows/docs.yml
 
-rdcanon/rdcanon.egg-info/
+!.gitignore
+!.gitattributes
+!LICENSE
+!README.md
+!mkdocs.yml
+!pyproject.toml
 
-# testing
-/coverage
+!rdcanon/
+!rdcanon/askcos_prims.py
+!rdcanon/drugbank_prims_with_nots.py
+!rdcanon/main.py
+!rdcanon/np_prims.py
+!rdcanon/pubchem_prims.py
+!rdcanon/rec_util.py
+!rdcanon/token_parser.py
+!rdcanon/util.py
 
-# production
-/flask_session
-/build
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-/env
-*.pyc
-/phactorlite/static/js
-/*.egg-info
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+!docs/
+!docs/stylesheets/
+!docs/stylesheets/extra.css
+!docs/index.md
+!docs/contributing.md
+!docs/reference.md
+
+!tests/
+!tests/rdcanon_tests.py
+
+!examples/
+!examples/example_notebook.ipynb

@@ -1,11 +1,24 @@
+import re
 from collections import deque
 from functools import cmp_to_key
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+
 import rdkit
 from rdkit import Chem
-import re
-from rdkit.Chem.rdchem import BondType, BondDir, BondStereo
+from rdkit.Chem.rdchem import BondDir, BondStereo, BondType
 
-bond_value_map = {
+bond_value_map: Dict[str, int] = {
     "UNSPECIFIED": 1000,
     "SINGLE": 901,
     "DOUBLE": 802,
@@ -33,38 +46,50 @@ bond_value_map = {
 
 
 class RecNode:
-    def __init__(self, index, data):
+    def __init__(self, index: int, data: Dict[str, Any]) -> None:
         self.index = index
         self.data = data
-        self.bonds = []  # Will hold Node instances
-        self.bond_types = []
-        self.bond_stereo = []
-        self.bond_smarts = []
-        self.serialized_score = []
-        self.score_original = 0
+        self.bonds: List["RecNode"] = []  # Will hold Node instances
+        self.bond_types: List[BondType] = []
+        self.bond_stereo: List[BondDir] = []
+        self.bond_smarts: List[str] = []
+        self.serialized_score: List[Any] = []
+        self.score_original: int = 0
 
-    def add_bond(self, node, bond_type, bond_stereo, bond_smarts):
+    def add_bond(
+        self,
+        node: "RecNode",
+        bond_type: BondType,
+        bond_stereo: BondDir,
+        bond_smarts: str,
+    ) -> None:
         if node not in self.bonds:
             self.bonds.append(node)
             self.bond_types.append(bond_type)
             self.bond_stereo.append(bond_stereo)
             self.bond_smarts.append(bond_smarts)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Node({self.index}, {self.data['smarts']})"
 
 
 class RecGraph:
-    def __init__(self, recursive_compare, v=False):
-        self.nodes = []
-        self.top_score = 0
-        self.v = v
-        self.recursive_compare = recursive_compare
-        self.bond_indices_to_smarts = {}
-        self.bond_indices_to_stereo = {}
-        self.bond_indices_to_relative_stereo = {}
+    def __init__(
+        self,
+        recursive_compare: Callable[[Sequence[Any], Sequence[Any]], int],
+        v: bool = False,
+    ) -> None:
+        self.nodes: List[RecNode] = []
+        self.top_score: List[Any] = []
+        self.v: bool = v
+        self.recursive_compare: Callable[[Sequence[Any], Sequence[Any]], int] = (
+            recursive_compare
+        )
+        self.bond_indices_to_smarts: Dict[Tuple[int, int], str] = {}
+        self.bond_indices_to_stereo: Dict[Tuple[int, int], BondStereo] = {}
+        self.bond_indices_to_relative_stereo: Dict[Tuple[int, int], BondStereo] = {}
 
-    def custom_key2(self, item1t, item2t):
+    def custom_key2(self, item1t: Dict[str, Any], item2t: Dict[str, Any]) -> int:
         item1 = item1t["path_scores"]
         item2 = item2t["path_scores"]
 
@@ -76,7 +101,12 @@ class RecGraph:
 
         return self.recursive_compare(item1, item2)
 
-    def graph_from_smarts(self, mol, order_token_canon, embedding):
+    def graph_from_smarts(
+        self,
+        mol: str,
+        order_token_canon: Callable[..., Tuple[str, List[Any], Any]],
+        embedding: Union[str, Mapping[str, Union[int, float]]],
+    ) -> None:
         mol = Chem.MolFromSmarts(mol)
         for i, atom in enumerate(mol.GetAtoms()):
             node_data = {
@@ -103,13 +133,13 @@ class RecGraph:
                 self.nodes[end_idx],
                 bond.GetBondType(),
                 bond.GetBondDir(),
-                bond.GetSmarts(),
+                bond.GetSmarts(),  # type: ignore[call-arg]
             )
             self.nodes[end_idx].add_bond(
                 self.nodes[start_idx],
                 bond.GetBondType(),
                 bond.GetBondDir(),
-                bond.GetSmarts(),
+                bond.GetSmarts(),  # type: ignore[call-arg]
             )
 
             self.bond_indices_to_stereo[(start_idx, end_idx)] = bond.GetStereo()
@@ -159,35 +189,45 @@ class RecGraph:
                     bond.GetStereo()
                 )
 
-            self.bond_indices_to_smarts[(start_idx, end_idx)] = bond.GetSmarts()
-            self.bond_indices_to_smarts[(end_idx, start_idx)] = bond.GetSmarts()
+            self.bond_indices_to_smarts[(start_idx, end_idx)] = bond.GetSmarts()  # type: ignore[call-arg]
+            self.bond_indices_to_smarts[(end_idx, start_idx)] = bond.GetSmarts()  # type: ignore[call-arg]
 
-    def replace_at_index(self, original, new_text, start, length):
+    def replace_at_index(
+        self, original: str, new_text: str, start: int, length: int
+    ) -> str:
         end = start + length
         return original[:start] + new_text + original[end:]
 
-    def insert_at_index(self, original, new_text, start):
+    def insert_at_index(self, original: str, new_text: str, start: int) -> str:
         return original[:start] + new_text + original[start:]
 
-    def find_hamiltonian_paths_iterative_sm(self, start_node, best_seen):
-        paths = []
-        smiles_out = []
-        node_maps_out = []
-        bond_maps_out = []
+    def find_hamiltonian_paths_iterative_sm(
+        self, start_node: int, best_seen: List[Any]
+    ) -> Tuple[
+        List[List[Tuple[RecNode, Optional[BondType], Optional[str]]]],
+        List[Any],
+        List[str],
+        List[Dict[int, int]],
+        List[Dict[Tuple[int, int], int]],
+    ]:
+        paths: List[List[Tuple[RecNode, Optional[BondType], Optional[str]]]] = []
+        smiles_out: List[str] = []
+        node_maps_out: List[Dict[int, int]] = []
+        bond_maps_out: List[Dict[Tuple[int, int], int]] = []
 
-        start_node = (self.nodes[start_node], None, None)
+        start_node_tuple = (self.nodes[start_node], None, None)
 
-        sm_so_far1 = start_node[0].data["smarts"]
+        sm_so_far1 = start_node_tuple[0].data["smarts"]
 
-        pa = [start_node[0].index]
-        node_to_sm_idx = {start_node[0].index: len(sm_so_far1)}
-        bond_to_sm_idx = {}
+        pa = [start_node_tuple[0].index]
+        node_to_sm_idx = {start_node_tuple[0].index: len(sm_so_far1)}
+        bond_to_sm_idx: Dict[Tuple[int, int], int] = {}
         branch_level = 0
-        stack = deque(
+        stack: Deque[Any] = deque(
             [
                 (
-                    start_node,
-                    [start_node],
+                    start_node_tuple,
+                    [start_node_tuple],
                     pa,
                     deque(),
                     sm_so_far1,
@@ -261,7 +301,6 @@ class RecGraph:
                     neighbors_not_visited = neighbors_not_visited + 1
                 else:
                     if r.index != parent_index and parent_index != -1:
-
                         bond_sm = self.bond_indices_to_smarts[
                             (current_node.index, r.index)
                         ]
@@ -324,7 +363,7 @@ class RecGraph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -361,7 +400,7 @@ class RecGraph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -404,9 +443,9 @@ class RecGraph:
 
         return paths, best_seen, smiles_out, node_maps_out, bond_maps_out
 
-    def all_depth_first_search(self):
-        poss_paths = []
-        all_paths_scored = []
+    def all_depth_first_search(self) -> List[Dict[str, Any]]:
+        poss_paths: List[List[Tuple[RecNode, Optional[BondType], Optional[str]]]] = []
+        all_paths_scored: List[Dict[str, Any]] = []
         path_idx = 0
         all_paths, best_seen, sm_o, node_map, bond_map = (
             self.find_hamiltonian_paths_iterative_sm(0, [])
@@ -416,7 +455,7 @@ class RecGraph:
             path_ar = []
             for rr in r:
                 path_ar.append(rr[0].serialized_score)
-                if rr[1] == None:
+                if rr[1] is None:
                     bond_v = "None"
                 else:
                     bond_v = rr[1].name
@@ -464,7 +503,7 @@ class RecGraph:
 
         return top_tied
 
-    def can_transform(self, set1, set2):
+    def can_transform(self, set1: List[Any], set2: List[Any]) -> bool:
         """
         Check if one set of indices can be transformed into another set by rotating three of the indices
         around a stationary one.
@@ -474,7 +513,7 @@ class RecGraph:
 
         lst = set1[1:]
         n = len(lst)
-        arrs = []
+        arrs: List[List[Any]] = []
         for i in range(n):
             # Rotate list by i places
             rotated_list = lst[-i:] + lst[:-i]
@@ -482,7 +521,7 @@ class RecGraph:
             rotated_list.insert(0, this_ar)
             arrs.append(rotated_list)
 
-        new_arrs = []
+        new_arrs: List[List[Any]] = []
         for arr in arrs:
             new_arrs.append(arr)
             rev = list(reversed(arr))
@@ -499,9 +538,9 @@ class RecGraph:
                 return True
         return False
 
-    def recreate_molecule(self):
+    def recreate_molecule(self) -> Tuple[str, List[Any]]:
         top_scores = self.all_depth_first_search()
-        sms = []
+        sms: List[Tuple[str, str, List[Any]]] = []
         for top_score in top_scores:
             unmapped, mapped = self.regen_molecule(
                 top_score["path"],
@@ -522,12 +561,18 @@ class RecGraph:
         self.top_score = sms[0][2]
         return sms[0][0], sms[0][2]
 
-    def regen_molecule(self, dfs, smarts_in, node_map, bond_map):
-        old_map_to_new_map = {}
+    def regen_molecule(
+        self,
+        dfs: List[Tuple[RecNode, Optional[BondType], Optional[str]]],
+        smarts_in: str,
+        node_map: Dict[int, int],
+        bond_map: Dict[Tuple[int, int], int],
+    ) -> Tuple[str, str]:
+        old_map_to_new_map: Dict[int, int] = {}
         i = 0
-        idxes_out = []
-        new_map_to_old_map = {}
-        atom_map_number_to_true_atom_map_number = {}
+        idxes_out: List[int] = []
+        new_map_to_old_map: Dict[int, int] = {}
+        atom_map_number_to_true_atom_map_number: Dict[int, int] = {}
 
         tmol = Chem.MolFromSmarts(smarts_in)
         for atom, (node, _, _) in zip(tmol.GetAtoms(), dfs):
@@ -618,18 +663,19 @@ class RecGraph:
                                 ).GetIdx()
                             bonds_set_trans.append((bond_a, bond_b))
 
-        for bond in bonds_set_equal:
-            bond = sorted(bond)
-            bond_order[bond[0]] = "\\"
-            bond_order[bond[1]] = "/"
-            tmol.GetBondWithIdx(bond[0]).SetBondDir(BondDir.ENDDOWNRIGHT)
-            tmol.GetBondWithIdx(bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
+        for bond_pair in bonds_set_equal:
+            sorted_bond = sorted(bond_pair)
+            bond_order[sorted_bond[0]] = "\\"
+            bond_order[sorted_bond[1]] = "/"
+            tmol.GetBondWithIdx(sorted_bond[0]).SetBondDir(BondDir.ENDDOWNRIGHT)
+            tmol.GetBondWithIdx(sorted_bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
 
-        for bond in bonds_set_trans:
-            bond_order[bond[0]] = "/"
-            bond_order[bond[1]] = "/"
-            tmol.GetBondWithIdx(bond[0]).SetBondDir(BondDir.ENDUPRIGHT)
-            tmol.GetBondWithIdx(bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
+        for bond_pair in bonds_set_trans:
+            sorted_bond = sorted(bond_pair)
+            bond_order[sorted_bond[0]] = "/"
+            bond_order[sorted_bond[1]] = "/"
+            tmol.GetBondWithIdx(sorted_bond[0]).SetBondDir(BondDir.ENDUPRIGHT)
+            tmol.GetBondWithIdx(sorted_bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
 
         rdkit.Chem.rdmolops.FastFindRings(tmol)
         rdkit.Chem.rdmolops.SetBondStereoFromDirections(tmol)
