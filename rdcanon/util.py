@@ -1,11 +1,8 @@
 import time
 import timeit
 
-import numpy as np
-from matplotlib import pyplot as plt
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from sklearn.neighbors import KernelDensity
 
 from rdcanon.main import canon_reaction_smarts, canon_smarts, random_smarts
 
@@ -245,81 +242,3 @@ def time_compare_substruct_match(
         for t, e in zip(ts, embeds):
             print(e, t)
     return ts
-
-
-def run_reactants_library(templates, substrates):
-    for t, s in zip(templates, substrates):
-        t.RunReactants((s,))
-
-
-def compare_retrosim(template_smarts, template_smarts_obj, target_database_mols):
-    for targ in target_database_mols:
-        reaction_ran = []
-        for idx, t in enumerate(template_smarts_obj):
-            if template_smarts[idx] not in reaction_ran:
-                p = t.RunReactants((targ,))
-                reaction_ran.append(template_smarts[idx])
-
-
-def generate_1d_kdes(grid, data_in, bandwidth=0.01):
-    # Scale the distributions
-    data = np.array(data_in)
-
-    kdes = []
-    for idx, distribution in enumerate(data):
-        kde = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(
-            distribution.reshape(-1, 1)
-        )
-
-        grid = grid.reshape(-1, 1)
-
-        kde_estimates = np.exp(
-            kde.score_samples(grid)
-        )  # score_samples returns log(density)
-
-        kdes.append(kde_estimates)
-
-    return kdes
-
-
-def plot_kde(
-    data,
-    color_array,
-    padding_percent=0.1,
-    bandwidth=0.1,
-    figsize=(3, 3),
-    title="kde.png",
-):
-    pad = (np.max(data) - np.min(data)) * padding_percent
-
-    x = np.linspace(np.min(data) - pad, np.max(data) + pad, 1000)
-
-    kdes = generate_1d_kdes(x, data, bandwidth=bandwidth)
-
-    fig, ax = plt.subplots(figsize=figsize, dpi=300)
-
-    for idx, kd in enumerate(kdes):
-        ax.plot(x, kd, color=color_array[idx])
-        ax.fill_between(x, kd, alpha=0.5, color=color_array[idx])
-        ax.vlines(
-            np.mean(data[idx]),
-            0,
-            np.max(kdes),
-            color="black",
-            linestyle="--",
-            linewidth=1,
-        )
-
-    ax.set_yticks(ax.get_yticks())
-    ax.set_yticklabels(ax.get_yticklabels(), fontsize=6, fontfamily="arial")
-    ax.set_xticks(ax.get_xticks()[1:-1])
-    ax.set_xticklabels(ax.get_xticklabels(), fontsize=6, fontfamily="arial")
-    ax.set_ylim([0.01, np.max(kdes) + np.max(kdes) * 0.1])
-    ax.set_xlabel(
-        "time (cpu seconds/experiment)",
-        fontsize=6,
-        fontfamily="arial",
-    )
-    ax.set_ylabel("density", fontsize=6, fontfamily="arial")
-
-    plt.savefig(title, dpi=300, bbox_inches="tight", pad_inches=0.01)

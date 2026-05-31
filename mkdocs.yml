@@ -1,0 +1,39 @@
+site_name: rdcanon_plus
+site_description: 
+repo_url: https://github.com/denovochem/rdcanon_plus
+repo_name: denovochem/rdcanon_plus
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Quick Start: index.md
+  - Benchmarks: benchmarks.md
+  - Consistency: consistency.md
+  - API Reference: reference.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - codehilite
+
+extra_css:
+  - stylesheets/extra.css
