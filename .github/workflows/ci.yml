@@ -19,13 +19,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff mypy types-requests rdkit rdcanon
+          pip install ruff mypy types-requests rdkit
       - name: Ruff format check
-        run: ruff format --check rdchiral
+        run: ruff format --check rdcanon
       - name: Ruff lint
-        run: ruff check rdchiral
+        run: ruff check rdcanon
       - name: Type check with mypy
-        run: mypy rdchiral
+        run: mypy rdcanon
   test:
     runs-on: ubuntu-latest
 
@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .
-          pip install pytest rdcanon
+          pip install pytest
 
       - name: Run tests
         run: pytest -v

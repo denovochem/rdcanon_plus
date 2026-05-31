@@ -277,7 +277,6 @@ class TestRecursive(absltest.TestCase):
         s_test2 = canon_smarts("[$([#7R1]1-[#7R1]=[#6R1]-1)]")
         assert canon_smarts(s_test1) == canon_smarts(s_test2)
 
-
     def test_multi_canon(self):
         path = (
             os.path.dirname(os.path.abspath(__file__))

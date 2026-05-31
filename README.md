@@ -16,4 +16,4 @@ rdcanon_plus is licensed under the [MIT license](https://github.com/denovochem/r
 ## References
 
 - [Original rdcanon_plus paper](https://pubs.acs.org/doi/10.1021/acs.jcim.4c00138)
-- [rdcanon_plus repo](https://github.com/connorcoley/rdcanon_plus)
+- [rdcanon repo](https://github.com/connorcoley/rdcanon)
