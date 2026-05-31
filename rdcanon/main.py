@@ -1438,12 +1438,8 @@ def gen_canon_repl_dict(
     """
     repl_dict_nodes: Dict[str, str] = {}
     for k in repl_dict:
-        # TODO: `embedding` is accidentally passed as the `mapping` positional argument
-        # to `canon_smarts`.  `canon_smarts(k, embedding)` sets `mapping=embedding`
-        # instead of `mapping=False, embedding=embedding`.  Fixing this will change
-        # behavior and should be done deliberately.
-        repl_dict_nodes[cast(str, canon_smarts(k, embedding))[1:-1]] = cast(
-            str, canon_smarts(repl_dict[k], embedding)
+        repl_dict_nodes[cast(str, canon_smarts(k, embedding=embedding))[1:-1]] = cast(
+            str, canon_smarts(repl_dict[k], embedding=embedding)
         )[1:-1]
     return repl_dict_nodes
 
