@@ -2,6 +2,7 @@ import hashlib
 import re
 from collections import deque
 from functools import cmp_to_key
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -47,7 +48,10 @@ bond_value_map = {
 }
 
 
-def hash_smarts(in_smarts, in_prims, func="sha256"):
+def hash_smarts(
+    in_smarts: str, in_prims: Mapping[str, Union[int, float]], func: str = "sha256"
+) -> Union[int, float]:
+    val: Union[int, float]
     if func == "sha256":
         smarts_bytes = in_smarts.encode()
         hasher = hashlib.sha256()
@@ -69,19 +73,19 @@ def hash_smarts(in_smarts, in_prims, func="sha256"):
     return val
 
 
-prims1["*"] = 10e64
-prims2["*"] = 10e64
-prims3["*"] = 10e64
-prims4["*"] = 10e64
+prims1["*"] = 10e64  # type: ignore[assignment]
+prims2["*"] = 10e64  # type: ignore[assignment]
+prims3["*"] = 10e64  # type: ignore[assignment]
+prims4["*"] = 10e64  # type: ignore[assignment]
 
 for k in prims1:
-    prims1[k] = prims1[k] + hash_smarts(k, {}) / 1e78
+    prims1[k] = prims1[k] + hash_smarts(k, {}) / 1e78  # type: ignore[assignment]
 for k in prims2:
-    prims2[k] = prims2[k] + hash_smarts(k, {}) / 1e78
+    prims2[k] = prims2[k] + hash_smarts(k, {}) / 1e78  # type: ignore[assignment]
 for k in prims3:
-    prims3[k] = prims3[k] + hash_smarts(k, {}) / 1e78
+    prims3[k] = prims3[k] + hash_smarts(k, {}) / 1e78  # type: ignore[assignment]
 for k in prims4:
-    prims4[k] = prims4[k] + hash_smarts(k, {}) / 1e78
+    prims4[k] = prims4[k] + hash_smarts(k, {}) / 1e78  # type: ignore[assignment]
 
 labels = [
     "!",
@@ -291,10 +295,10 @@ ATOMS = [
 
 
 class SMARTSTransformer2(Transformer):
-    def start(self, args):
+    def start(self, args: List[Any]) -> Tuple[Union[str, List[str]], List[str]]:
         results = []
 
-        stack = deque()
+        stack: deque[Any] = deque()
 
         stack.append(args[0])
 
@@ -522,7 +526,7 @@ class SMARTSTransformer2(Transformer):
                 cur_atom = cur_atom + r
                 continue
 
-            result = {
+            result: Dict[str, Any] = {
                 "!": -1,
                 "D": -1,
                 "H": -1,
@@ -701,75 +705,75 @@ class SMARTSTransformer2(Transformer):
             results.append(result)
         return atoms_in_seq, bonds_in_seq
 
-    def isotope(self, args):
+    def isotope(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "iso", args
 
-    def not1(self, args):
+    def not1(self, args: List[Any]) -> Tuple[str, Any]:
         return "!", args[0]  # Returning '!' to indicate its presence
 
-    def not2(self, args):
+    def not2(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "!", args  # Returning '!' to indicate its presence
 
-    def symbol(self, args):
+    def symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "prim", args[0]
 
-    def symbol_single(self, args):
+    def symbol_single(self, args: List[Any]) -> Tuple[str, Any]:
         return "prim", args[0]
 
-    def degree1(self, args):
+    def degree1(self, args: List[Any]) -> Tuple[str, Any]:
         return "deg", args[0]
 
-    def nested_rule(self, args):
+    def nested_rule(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "nested", args
 
-    def item(self, args):
+    def item(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "item", args
 
-    def component(self, args):
+    def component(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "component", args
 
-    def atom(self, args):
+    def atom(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "atom", args
 
-    def token(self, args):
+    def token(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "token", args
 
-    def operator_symbol(self, args):
+    def operator_symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "op", args[0]
 
-    def bond_symbol(self, args):
+    def bond_symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "bond", args[0]
 
-    def open(self, args):
+    def open(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "open", args
 
-    def close(self, args):
+    def close(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "close", args
 
-    def bracketed_rule(self, args):
+    def bracketed_rule(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "bracketed", args
 
-    def BOND_PRIMITIVE(self, args):
+    def BOND_PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
-    def PRIMITIVE(self, args):
+    def PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
-    def DIGIT(self, args):
+    def DIGIT(self, args: List[Any]) -> List[Any]:
         return args
 
-    def NOT(self, args):
+    def NOT(self, args: List[Any]) -> List[Any]:
         return args
 
-    def OPERATOR_PRIMITIVE(self, args):
+    def OPERATOR_PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
 
 class SMARTSTransformer(Transformer):
-    def start(self, args):
+    def start(self, args: List[Any]) -> Tuple[List[Dict[str, Any]], str]:
         results = []
 
-        stack = deque()
+        stack: deque[Any] = deque()
 
         stack.append(args[0])
 
@@ -861,7 +865,7 @@ class SMARTSTransformer(Transformer):
 
         if "$" not in tok:
             for r in reversed(seq):
-                result = {
+                result: Dict[str, Any] = {
                     "!": -1,
                     "D": -1,
                     "H": -1,
@@ -1024,7 +1028,7 @@ class SMARTSTransformer(Transformer):
                         result[k] = result[k] + 1
                 results.append(result)
         else:
-            result = {
+            result: Dict[str, Any] = {  # type: ignore[no-redef]
                 "!": -1,
                 "D": -1,
                 "H": -1,
@@ -1146,71 +1150,71 @@ class SMARTSTransformer(Transformer):
 
         return results, tok
 
-    def isotope(self, args):
+    def isotope(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "iso", args
 
-    def not1(self, args):
+    def not1(self, args: List[Any]) -> Tuple[str, Any]:
         return "!", args[0]  # Returning '!' to indicate its presence
 
-    def not2(self, args):
+    def not2(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "!", args  # Returning '!' to indicate its presence
 
-    def symbol(self, args):
+    def symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "prim", args[0]
 
-    def symbol_single(self, args):
+    def symbol_single(self, args: List[Any]) -> Tuple[str, Any]:
         return "prim", args[0]
 
-    def degree1(self, args):
+    def degree1(self, args: List[Any]) -> Tuple[str, Any]:
         return "deg", args[0]
 
-    def nested_rule(self, args):
+    def nested_rule(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "nested", args
 
-    def item(self, args):
+    def item(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "item", args
 
-    def component(self, args):
+    def component(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "component", args
 
-    def atom(self, args):
+    def atom(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "atom", args
 
-    def token(self, args):
+    def token(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "token", args
 
-    def operator_symbol(self, args):
+    def operator_symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "op", args[0]
 
-    def bond_symbol(self, args):
+    def bond_symbol(self, args: List[Any]) -> Tuple[str, Any]:
         return "bond", args[0]
 
-    def open(self, args):
+    def open(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "open", args
 
-    def close(self, args):
+    def close(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "close", args
 
-    def bracketed_rule(self, args):
+    def bracketed_rule(self, args: List[Any]) -> Tuple[str, List[Any]]:
         return "bracketed", args
 
-    def BOND_PRIMITIVE(self, args):
+    def BOND_PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
-    def PRIMITIVE(self, args):
+    def PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
-    def DIGIT(self, args):
+    def DIGIT(self, args: List[Any]) -> List[Any]:
         return args
 
-    def NOT(self, args):
+    def NOT(self, args: List[Any]) -> List[Any]:
         return args
 
-    def OPERATOR_PRIMITIVE(self, args):
+    def OPERATOR_PRIMITIVE(self, args: List[Any]) -> List[Any]:
         return args
 
 
-def split_smarts_f(out_sm):
+def split_smarts_f(out_sm: str) -> List[str]:
     if out_sm[0] == "[" and out_sm[-1] == "]":
         deb = out_sm[1:-1]
     else:
@@ -1219,7 +1223,12 @@ def split_smarts_f(out_sm):
     return debsp
 
 
-def custom_split(input_string, delimiter=";", nested_start="$(", nested_end=")"):
+def custom_split(
+    input_string: str,
+    delimiter: str = ";",
+    nested_start: str = "$(",
+    nested_end: str = ")",
+) -> List[str]:
     """
     Splits the input_string by the specified delimiter, but does not split anything within the nested structures.
     """
@@ -1250,7 +1259,12 @@ def custom_split(input_string, delimiter=";", nested_start="$(", nested_end=")")
     return parts
 
 
-def categorize_string(sm, groups, nested_start="$(", nested_end=")"):
+def categorize_string(
+    sm: str,
+    groups: Dict[str, List[str]],
+    nested_start: str = "$(",
+    nested_end: str = ")",
+) -> None:
     """
     Categorize the string based on the presence of specific characters outside of nested structures.
     """
@@ -1274,7 +1288,7 @@ def categorize_string(sm, groups, nested_start="$(", nested_end=")"):
     groups[key].append(sm)
 
 
-def group_split_smarts(split_smarts):
+def group_split_smarts(split_smarts: List[str]) -> Dict[str, List[str]]:
     # start with queries containing ! and & and ,
     # then add queries containing only ! and &
     # then add queries containing only ! and ,
@@ -1283,7 +1297,7 @@ def group_split_smarts(split_smarts):
     # then add queries containing only &
     # then add queries containing only ,
 
-    groups = {
+    groups: Dict[str, List[str]] = {
         "!&,": [],
         "!&": [],
         "!,": [],
@@ -1298,7 +1312,9 @@ def group_split_smarts(split_smarts):
     return groups
 
 
-def check_special_chars_outside_nested(sm, nested_start="$(", nested_end=")"):
+def check_special_chars_outside_nested(
+    sm: str, nested_start: str = "$(", nested_end: str = ")"
+) -> bool:
     """
     Check if "&" is in the string `sm`, but not inside `$( x )` structures.
     """
@@ -1322,8 +1338,8 @@ def check_special_chars_outside_nested(sm, nested_start="$(", nested_end=")"):
     return all(found_chars.values())
 
 
-def reorder_and_token(in_token):
-    tokens = []
+def reorder_and_token(in_token: str) -> Tuple[str, List[Any]]:
+    tokens: List[Any] = []
     spl_token = custom_split(in_token, "&")
     for token in spl_token:
         # primitive
@@ -1334,8 +1350,10 @@ def reorder_and_token(in_token):
     return ("and", tokens)
 
 
-def reorder_comma_token(in_token):
-    tokens = []
+def reorder_comma_token(
+    in_token: str,
+) -> Tuple[str, List[Any]]:
+    tokens: List[Any] = []
     spl_token = custom_split(in_token, ",")
     for token in spl_token:
         if check_special_chars_outside_nested(token):
@@ -1350,8 +1368,10 @@ def reorder_comma_token(in_token):
     return ("or", tokens)
 
 
-def reorder_internal_split_smarts(grouped_split_smarts):
-    ordered_out = {}
+def reorder_internal_split_smarts(
+    grouped_split_smarts: Dict[str, List[str]],
+) -> Dict[str, List[Any]]:
+    ordered_out: Dict[str, List[Any]] = {}
     for group in all_groups:
         ordered_out[group] = []
     for group in all_groups:
@@ -1396,14 +1416,16 @@ def reorder_internal_split_smarts(grouped_split_smarts):
     return ordered_out
 
 
-def sanitize_smarts_token(in_token):
+def sanitize_smarts_token(
+    in_token: str,
+) -> Tuple[Dict[str, List[Any]], Dict[str, List[str]]]:
     o1 = list(set(split_smarts_f(in_token)))
     o2 = group_split_smarts(o1)
     o3 = reorder_internal_split_smarts(o2)
     return o3, o2
 
 
-def parse_label(lab):
+def parse_label(lab: Dict[str, Any]) -> str:
     tx = ""
     if lab["rec"] == 1:
         return "rec"
@@ -1422,10 +1444,14 @@ def parse_label(lab):
     return tx
 
 
-def gen_data_substructure(tree_in, digraph, prims):
+def gen_data_substructure(
+    tree_in: Any,
+    digraph: nx.DiGraph,
+    prims: Union[str, Mapping[str, Union[int, float]]],
+) -> Tuple[np.ndarray, List[str], Any]:
     results = []
     ops = []
-    stack = deque()
+    stack: deque[Any] = deque()
     stack.append((tree_in, 0))
     n = len(digraph.nodes)
     while len(stack) > 0:
@@ -1478,7 +1504,7 @@ def gen_data_substructure(tree_in, digraph, prims):
         n = n + 1
 
     x_toks = results[0].keys()
-    hm = []
+    hm: Any = []
     ops.append("")
     for rr in results:
         if type(rr) == str:
@@ -1495,7 +1521,12 @@ def gen_data_substructure(tree_in, digraph, prims):
     return hm, ops, x_toks
 
 
-def gen_data_structure(sanitized, group_smarts, test_smarts, prims="askcos"):
+def gen_data_structure(
+    sanitized: Dict[str, List[Any]],
+    group_smarts: Dict[str, List[str]],
+    test_smarts: str,
+    prims: Union[str, Mapping[str, Union[int, float]]] = "askcos",
+) -> Tuple[List[np.ndarray], List[List[str]], List[Any], nx.DiGraph, List[str]]:
     trees = []
     titles = []
 
@@ -1598,7 +1629,7 @@ transformer = SMARTSTransformer()
 transformer2 = SMARTSTransformer2()
 
 
-def parse_smarts_total(in_smarts, num_atoms):
+def parse_smarts_total(in_smarts: str, num_atoms: int) -> Tuple[List[str], List[str]]:
     if in_smarts[0:2] == "[$" and num_atoms == 1:
         parsed = parser.parse(in_smarts)
     else:
@@ -1608,7 +1639,7 @@ def parse_smarts_total(in_smarts, num_atoms):
     return atoms_seq, bonds_seq
 
 
-def recursive_compare(list1, list2):
+def recursive_compare(list1: Sequence[Any], list2: Sequence[Any]) -> int:
     index1 = index2 = 0
 
     if not list2 or not list1:
@@ -1662,19 +1693,23 @@ def recursive_compare(list1, list2):
     return (len(list1) > len(list2)) - (len(list1) < len(list2))
 
 
-def custom_key2(item1t, item2t):
+def custom_key2(
+    item1t: Tuple[Sequence[Any], Any], item2t: Tuple[Sequence[Any], Any]
+) -> int:
     item1, tiebreaker1 = item1t
     item2, tiebreaker2 = item2t
     return recursive_compare(item1, item2)
 
 
-def custom_key(item1t, item2t):
+def custom_key(
+    item1t: Tuple[Sequence[Any], Any], item2t: Tuple[Sequence[Any], Any]
+) -> int:
     item1, tiebreaker1 = item1t
     item2, tiebreaker2 = item2t
     return recursive_compare(item1, item2)
 
 
-def moveToFront(lst, pos):
+def moveToFront(lst: List[Any], pos: int) -> List[Any]:
     if pos >= len(lst) or pos < 0:
         raise IndexError("Position is out of the range of the list")
 
@@ -1685,12 +1720,13 @@ def moveToFront(lst, pos):
 
 
 def order_token_canon(
-    in_smarts_token="[!a@H&D2;#7,#6;H;a-3;#7,!O,!#8&!O;#7,!O,!#8&!O++;*;H0]",
-    atom_map=None,
-    embedding="drugbank",
-    min_num_explicit_hs=None,
-    opt_num_explicit_hs=None,
-):
+    in_smarts_token: str = "[!a@H&D2;#7,#6;H;a-3;#7,!O,!#8&!O;#7,!O,!#8&!O++;*;H0]",
+    atom_map: Optional[str] = None,
+    embedding: Union[str, Dict[str, float]] = "drugbank",
+    min_num_explicit_hs: Optional[int] = None,
+    opt_num_explicit_hs: Optional[int] = None,
+) -> Union[Tuple[str, Any, nx.DiGraph], Tuple[str, List[Any], nx.DiGraph]]:
+    prims: Mapping[str, Union[int, float]]
     if embedding == "askcos":
         prims = prims1
     elif embedding == "pubchem":
@@ -1770,7 +1806,7 @@ def order_token_canon(
         else:
             remaining_nodes.append(node)
 
-    stack = deque()
+    stack: deque[Any] = deque()
     stack.append(0)
     # print(dg.edges, [dg.nodes[i] for i in dg.nodes])
     # print(dg.in_edges(0))

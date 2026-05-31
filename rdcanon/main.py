@@ -2,9 +2,10 @@ import random
 import re
 from collections import deque
 from functools import cmp_to_key
+from typing import Any, Deque, Dict, List, Optional, Tuple, Union, cast
 
 import rdkit
-from rdkit import Chem, RDLogger
+from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.rdchem import BondDir, BondStereo, BondType
 
@@ -14,8 +15,6 @@ from rdcanon.token_parser import (
     parse_smarts_total,
     recursive_compare,
 )
-
-RDLogger.DisableLog("rdApp.*")
 
 bond_value_map = {
     "UNSPECIFIED": 1000,
@@ -44,7 +43,7 @@ bond_value_map = {
 }
 
 
-def custom_key2(item1t, item2t):
+def custom_key2(item1t: Dict[str, Any], item2t: Dict[str, Any]) -> int:
     item1 = item1t["path_scores"]
     item2 = item2t["path_scores"]
 
@@ -58,38 +57,46 @@ def custom_key2(item1t, item2t):
 
 
 class Node:
-    def __init__(self, index, data):
+    def __init__(self, index: int, data: Dict[str, Any]) -> None:
         self.index = index
         self.data = data
-        self.bonds = []  # Will hold Node instances
-        self.bond_types = []
-        self.bond_stereo = []
-        self.bond_smarts = []
-        self.serialized_score = []
+        self.bonds: List["Node"] = []  # Will hold Node instances
+        self.bond_types: List[BondType] = []
+        self.bond_stereo: List[BondDir] = []
+        self.bond_smarts: List[str] = []
+        self.serialized_score: List[Any] = []
         self.score_original = 0
 
-    def add_bond(self, node, bond_type, bond_stereo, bond_smarts):
+    def add_bond(
+        self,
+        node: "Node",
+        bond_type: BondType,
+        bond_stereo: BondDir,
+        bond_smarts: str,
+    ) -> None:
         if node not in self.bonds:
             self.bonds.append(node)
             self.bond_types.append(bond_type)
             self.bond_stereo.append(bond_stereo)
             self.bond_smarts.append(bond_smarts)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Node({self.index}, {self.data['smarts']})"
 
 
 class Graph:
-    def __init__(self, v=False):
-        self.nodes = []
-        self.top_score = 0
+    def __init__(self, v: bool = False) -> None:
+        self.nodes: List[Node] = []
+        self.top_score: List[Any] = []
         self.v = v
-        self.bond_indices_to_smarts = {}
-        self.bond_indices_to_stereo = {}
-        self.bond_indices_to_relative_stereo = {}
+        self.bond_indices_to_smarts: Dict[Tuple[int, int], str] = {}
+        self.bond_indices_to_stereo: Dict[Tuple[int, int], BondStereo] = {}
+        self.bond_indices_to_relative_stereo: Dict[Tuple[int, int], BondStereo] = {}
         # self.atom_to_original_chiral_tag = {}
 
-    def graph_from_smarts(self, smarts, embedding):
+    def graph_from_smarts(
+        self, smarts: str, embedding: Union[str, Dict[str, float]]
+    ) -> None:
         proton_mol = Chem.MolFromSmiles("[#1]")
 
         mol = Chem.MolFromSmarts(smarts)
@@ -109,7 +116,7 @@ class Graph:
             print()
             print("token embeddings")
 
-        num_atoms = len(mol.GetAtoms())
+        num_atoms = len(mol.GetAtoms())  # type: ignore[arg-type]
         atoms_seq, bonds_seq = parse_smarts_total(smarts, num_atoms)
 
         old_idx_to_new_idx = {}
@@ -124,8 +131,8 @@ class Graph:
             if atom.GetSmarts() == "[H]" or atom.GetSmarts() == "[#1]":
                 continue
 
-            min_num_explicit_hs = 0
-            opt_num_explicit_hs = 0
+            min_num_explicit_hs: Optional[int] = 0
+            opt_num_explicit_hs: Optional[int] = 0
             # for neighbors in atom.GetNeighbors():
             #     neigh_sm = Chem.MolFromSmarts(neighbors.GetSmarts())
             #     if neighbors.GetSmarts() == "[H]" or neighbors.GetSmarts() == "[#1]":
@@ -165,7 +172,7 @@ class Graph:
             if self.v:
                 print(">", n.data["smarts"], sm, sc)
 
-            single_score = sc
+            single_score: Any = sc
             while True:
                 if type(single_score) == list or type(single_score) == tuple:
                     single_score = single_score[0]
@@ -199,13 +206,13 @@ class Graph:
                 self.nodes[end_idx],
                 bond.GetBondType(),
                 bond.GetBondDir(),
-                bond.GetSmarts(),
+                bond.GetSmarts(),  # type: ignore[call-arg]
             )
             self.nodes[end_idx].add_bond(
                 self.nodes[start_idx],
                 bond.GetBondType(),
                 bond.GetBondDir(),
-                bond.GetSmarts(),
+                bond.GetSmarts(),  # type: ignore[call-arg]
             )
 
             self.bond_indices_to_stereo[(start_idx, end_idx)] = bond.GetStereo()
@@ -257,31 +264,54 @@ class Graph:
                     bond.GetStereo()
                 )
 
-            self.bond_indices_to_smarts[(start_idx, end_idx)] = bond.GetSmarts()
-            self.bond_indices_to_smarts[(end_idx, start_idx)] = bond.GetSmarts()
+            self.bond_indices_to_smarts[(start_idx, end_idx)] = bond.GetSmarts()  # type: ignore[call-arg]
+            self.bond_indices_to_smarts[(end_idx, start_idx)] = bond.GetSmarts()  # type: ignore[call-arg]
 
-    def replace_at_index(self, original, new_text, start, length):
+    def replace_at_index(
+        self, original: str, new_text: str, start: int, length: int
+    ) -> str:
         end = start + length
         return original[:start] + new_text + original[end:]
 
-    def insert_at_index(self, original, new_text, start):
+    def insert_at_index(self, original: str, new_text: str, start: int) -> str:
         return original[:start] + new_text + original[start:]
 
-    def find_hamiltonian_paths_iterative_sm(self, start_node, best_seen):
-        paths = []
-        smiles_out = []
-        node_maps_out = []
-        bond_maps_out = []
+    def find_hamiltonian_paths_iterative_sm(
+        self, start_node_index: int, best_seen: List[Any]
+    ) -> Tuple[
+        List[Any],
+        List[Any],
+        List[str],
+        List[Dict[int, int]],
+        List[Dict[Tuple[int, int], int]],
+    ]:
+        paths: List[Any] = []
+        smiles_out: List[str] = []
+        node_maps_out: List[Dict[int, int]] = []
+        bond_maps_out: List[Dict[Tuple[int, int], int]] = []
 
-        start_node = (self.nodes[start_node], None, None)
+        start_node = (self.nodes[start_node_index], None, None)
 
         sm_so_far1 = start_node[0].data["smarts"]
 
         pa = [start_node[0].index]
         node_to_sm_idx = {start_node[0].index: len(sm_so_far1)}
-        bond_to_sm_idx = {}
+        bond_to_sm_idx: Dict[Tuple[int, int], int] = {}
         branch_level = 0
-        stack = deque(
+        stack: Deque[
+            Tuple[
+                Tuple["Node", Optional[BondType], Optional[str]],
+                List[Any],
+                List[int],
+                deque,
+                str,
+                Optional[int],
+                Dict[int, int],
+                int,
+                Dict[Tuple[int, int], int],
+                int,
+            ]
+        ] = deque(
             [
                 (
                     start_node,
@@ -500,22 +530,22 @@ class Graph:
 
         return paths, best_seen, smiles_out, node_maps_out, bond_maps_out
 
-    def all_depth_first_search(self):
+    def all_depth_first_search(self) -> List[Dict[str, Any]]:
         if self.v:
             print("enumerated paths")
 
         node_data = [x.serialized_score for x in self.nodes]
 
         n = min(node_data, key=cmp_to_key(recursive_compare))
-        top_nodes = []
+        top_nodes: List[int] = []
         for i, nd in enumerate(node_data):
             if nd == n:
                 top_nodes.append(i)
 
-        poss_paths = []
-        all_paths_scored = []
+        poss_paths: List[Any] = []
+        all_paths_scored: List[Dict[str, Any]] = []
         path_idx = 0
-        best_seen = []
+        best_seen: List[Any] = []
         for idx, h in enumerate(self.nodes):
             if idx not in top_nodes:
                 continue
@@ -526,7 +556,7 @@ class Graph:
             best_seen = new_best_seen
 
             for i, r in enumerate(all_paths):
-                path_ar = []
+                path_ar: List[Any] = []
                 for rr in r:
                     path_ar.append(rr[0].serialized_score)
                     if rr[1] == None:
@@ -567,7 +597,7 @@ class Graph:
             for kk in these_weights:
                 print(">", kk)
 
-        top_tied = []
+        top_tied: List[Dict[str, Any]] = []
         top_score = these_weights[0]["path_scores"]
         for i, p in enumerate(these_weights):
             if p["path_scores"] == top_score:
@@ -577,7 +607,7 @@ class Graph:
 
         return top_tied
 
-    def can_transform(self, set1, set2):
+    def can_transform(self, set1: List[int], set2: List[int]) -> bool:
         """
         Check if one set of indices can be transformed into another set by rotating three of the indices
         around a stationary one.
@@ -612,9 +642,9 @@ class Graph:
                 return True
         return False
 
-    def recreate_molecule(self, mapping):
+    def recreate_molecule(self, mapping: bool) -> str:
         top_scores = self.all_depth_first_search()
-        sms = []
+        sms: List[Tuple[str, str, List[Any]]] = []
         for top_score in top_scores:
             unmapped, mapped = self.regen_molecule(
                 top_score["path"],
@@ -640,11 +670,17 @@ class Graph:
         else:
             return sms[0][0]
 
-    def delete_at_index(self, original, start, length):
+    def delete_at_index(self, original: str, start: int, length: int) -> str:
         end = start + length
         return original[:start] + original[end:]
 
-    def regen_molecule(self, dfs, smarts_in, node_map, bond_map):
+    def regen_molecule(
+        self,
+        dfs: List[Tuple["Node", Optional[BondType], Optional[str]]],
+        smarts_in: str,
+        node_map: Dict[int, int],
+        bond_map: Dict[Tuple[int, int], int],
+    ) -> Tuple[str, str]:
         old_map_to_new_map = {}
         i = 0
         idxes_out = []
@@ -671,8 +707,8 @@ class Graph:
         ### Fix Bonds ###
         ###           ###
 
-        bonds_set_equal = []
-        bonds_set_trans = []
+        bonds_set_equal: List[Tuple[int, int]] = []
+        bonds_set_trans: List[Tuple[int, int]] = []
         for bond in tmol.GetBonds():
             if bond.GetBondType() == BondType.DOUBLE:
                 start_atom = tmol.GetAtomWithIdx(bond.GetBeginAtomIdx())
@@ -789,15 +825,15 @@ class Graph:
         # print(bonds_set_equal)
         # print(bonds_set_trans)
 
-        for bond in bonds_set_equal:
-            bond = sorted(bond)
-            tmol.GetBondWithIdx(bond[0]).SetBondDir(BondDir.ENDDOWNRIGHT)
-            tmol.GetBondWithIdx(bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
+        for bond_pair in bonds_set_equal:
+            sorted_bond = sorted(bond_pair)
+            tmol.GetBondWithIdx(sorted_bond[0]).SetBondDir(BondDir.ENDDOWNRIGHT)
+            tmol.GetBondWithIdx(sorted_bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
 
-        for bond in bonds_set_trans:
-            bond = sorted(bond)
-            tmol.GetBondWithIdx(bond[0]).SetBondDir(BondDir.ENDUPRIGHT)
-            tmol.GetBondWithIdx(bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
+        for bond_pair in bonds_set_trans:
+            sorted_bond = sorted(bond_pair)
+            tmol.GetBondWithIdx(sorted_bond[0]).SetBondDir(BondDir.ENDUPRIGHT)
+            tmol.GetBondWithIdx(sorted_bond[1]).SetBondDir(BondDir.ENDUPRIGHT)
 
         rdkit.Chem.rdmolops.FastFindRings(tmol)
         rdkit.Chem.rdmolops.SetBondStereoFromDirections(tmol)
@@ -1043,33 +1079,33 @@ class Graph:
 
         return smarts_in_no_map, smarts_in_mapped
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Graph({self.nodes})"
 
 
 class Reaction:
     def __init__(
         self,
-        input_reaction_smarts,
-        mapping,
-        embedding,
-        remapping=False,
-        v=False,
-        repl_dict={},
-    ):
-        self.reactants = []
-        self.agents = []
-        self.products = []
+        input_reaction_smarts: str,
+        mapping: bool,
+        embedding: Union[str, Dict[str, float]],
+        remapping: bool = False,
+        v: bool = False,
+        repl_dict: Dict[str, str] = {},
+    ) -> None:
+        self.reactants: List[Dict[str, Any]] = []
+        self.agents: List[Dict[str, Any]] = []
+        self.products: List[Dict[str, Any]] = []
         self.input_reaction_smarts = input_reaction_smarts
         self.mapping = mapping
         self.embedding = embedding
         self.remapping = remapping
         self.v = v
         self.index = 1
-        self.index_map = {}
+        self.index_map: Dict[int, int] = {}
         self.repl_dict = repl_dict
 
-    def _load_reactants(self, reactants):
+    def _load_reactants(self, reactants: List[str]) -> None:
         for r_sm in reactants:
             is_grouped = False
             if r_sm[0] == "(":
@@ -1084,12 +1120,15 @@ class Reaction:
                 smss = [r_sm]
             grouped = []
             for sm in smss:
-                san_sm, ts, unmapped_canon = canon_smarts(
-                    sm,
-                    self.mapping,
-                    self.embedding,
-                    return_score=True,
-                    repl_dict=self.repl_dict,
+                san_sm, ts, unmapped_canon = cast(
+                    Tuple[str, List[Any], str],
+                    canon_smarts(
+                        sm,
+                        self.mapping,
+                        self.embedding,
+                        return_score=True,
+                        repl_dict=self.repl_dict,
+                    ),
                 )
                 grouped.append(
                     {
@@ -1101,8 +1140,10 @@ class Reaction:
 
             grouped = sorted(grouped, key=cmp_to_key(custom_key2))
 
-            san_sm_out = ".".join([x["san_smarts"] for x in grouped])
-            unmapped_san_sm_out = ".".join([x["unmapped_canon"] for x in grouped])
+            san_sm_out = ".".join(cast(List[str], [x["san_smarts"] for x in grouped]))
+            unmapped_san_sm_out = ".".join(
+                cast(List[str], [x["unmapped_canon"] for x in grouped])
+            )
             tss = [x["path_scores"] for x in grouped]
             if is_grouped:
                 san_sm_out = "(" + san_sm_out + ")"
@@ -1117,7 +1158,7 @@ class Reaction:
                 }
             )
 
-    def _load_agents(self, agents):
+    def _load_agents(self, agents: List[str]) -> None:
         for r_sm in agents:
             is_grouped = False
             if r_sm[0] == "(":
@@ -1132,12 +1173,15 @@ class Reaction:
                 smss = [r_sm]
             grouped = []
             for sm in smss:
-                san_sm, ts, unmapped_canon = canon_smarts(
-                    sm,
-                    self.mapping,
-                    self.embedding,
-                    return_score=True,
-                    repl_dict=self.repl_dict,
+                san_sm, ts, unmapped_canon = cast(
+                    Tuple[str, List[Any], str],
+                    canon_smarts(
+                        sm,
+                        self.mapping,
+                        self.embedding,
+                        return_score=True,
+                        repl_dict=self.repl_dict,
+                    ),
                 )
                 grouped.append(
                     {
@@ -1148,8 +1192,10 @@ class Reaction:
                 )
 
             grouped = sorted(grouped, key=cmp_to_key(custom_key2))
-            san_sm_out = ".".join([x["san_smarts"] for x in grouped])
-            unmapped_san_sm_out = ".".join([x["unmapped_canon"] for x in grouped])
+            san_sm_out = ".".join(cast(List[str], [x["san_smarts"] for x in grouped]))
+            unmapped_san_sm_out = ".".join(
+                cast(List[str], [x["unmapped_canon"] for x in grouped])
+            )
             tss = [x["path_scores"] for x in grouped]
             if is_grouped:
                 san_sm_out = "(" + san_sm_out + ")"
@@ -1164,7 +1210,7 @@ class Reaction:
                 }
             )
 
-    def _load_products(self, products):
+    def _load_products(self, products: List[str]) -> None:
         for r_sm in products:
             is_grouped = False
             if r_sm[0] == "(":
@@ -1179,12 +1225,15 @@ class Reaction:
                 smss = [r_sm]
             grouped = []
             for sm in smss:
-                san_sm, ts, unmapped_canon = canon_smarts(
-                    sm,
-                    self.mapping,
-                    self.embedding,
-                    return_score=True,
-                    repl_dict=self.repl_dict,
+                san_sm, ts, unmapped_canon = cast(
+                    Tuple[str, List[Any], str],
+                    canon_smarts(
+                        sm,
+                        self.mapping,
+                        self.embedding,
+                        return_score=True,
+                        repl_dict=self.repl_dict,
+                    ),
                 )
                 grouped.append(
                     {
@@ -1195,8 +1244,10 @@ class Reaction:
                 )
 
             grouped = sorted(grouped, key=cmp_to_key(custom_key2))
-            san_sm_out = ".".join([x["san_smarts"] for x in grouped])
-            unmapped_san_sm_out = ".".join([x["unmapped_canon"] for x in grouped])
+            san_sm_out = ".".join(cast(List[str], [x["san_smarts"] for x in grouped]))
+            unmapped_san_sm_out = ".".join(
+                cast(List[str], [x["unmapped_canon"] for x in grouped])
+            )
             tss = [x["path_scores"] for x in grouped]
             if is_grouped:
                 san_sm_out = "(" + san_sm_out + ")"
@@ -1211,7 +1262,7 @@ class Reaction:
                 }
             )
 
-    def remap(self, in_smarts):
+    def remap(self, in_smarts: List[Dict[str, Any]]) -> None:
         for r in in_smarts:
             grouped = False
             if r["san_smarts"][0] == "(":
@@ -1240,9 +1291,9 @@ class Reaction:
             if grouped:
                 r["san_smarts"] = "(" + r["san_smarts"] + ")"
 
-    def split_at_period_not_in_parentheses(self, s):
-        parts = []
-        current_part = []
+    def split_at_period_not_in_parentheses(self, s: str) -> List[str]:
+        parts: List[str] = []
+        current_part: List[str] = []
         depth = 0  # Track the depth of parentheses nesting
 
         for char in s:
@@ -1265,8 +1316,8 @@ class Reaction:
 
         return parts
 
-    def canonicalize_template(self):
-        k = AllChem.ReactionFromSmarts(self.input_reaction_smarts)
+    def canonicalize_template(self) -> str:
+        k = AllChem.ReactionFromSmarts(self.input_reaction_smarts)  # type: ignore[attr-defined]
         if len(k.GetAgents()) > 0:
             comps = self.input_reaction_smarts.split(">")
             if len(comps) == 3:
@@ -1314,7 +1365,9 @@ class Reaction:
         return san_smarts_out
 
 
-def random_smarts(smarts="[Cl][C][C][C][N][C][C][C][Br]", mapping=False):
+def random_smarts(
+    smarts: str = "[Cl][C][C][C][N][C][C][C][Br]", mapping: bool = False
+) -> str:
     """
     Generate a random molecule based on the given SMARTS pattern.
 
@@ -1328,7 +1381,7 @@ def random_smarts(smarts="[Cl][C][C][C][N][C][C][C][Br]", mapping=False):
     """
     g = Graph()
 
-    prims = {}
+    prims: Dict[str, float] = {}
     for k in prims1:
         prims[k] = random.random()
 
@@ -1338,13 +1391,13 @@ def random_smarts(smarts="[Cl][C][C][C][N][C][C][C][Br]", mapping=False):
 
 
 def canon_smarts(
-    smarts,
-    mapping=False,
-    embedding="drugbank",
-    return_score=False,
-    v=False,
-    repl_dict={},
-):
+    smarts: str,
+    mapping: bool = False,
+    embedding: Union[str, Dict[str, float]] = "drugbank",
+    return_score: bool = False,
+    v: bool = False,
+    repl_dict: Dict[str, str] = {},
+) -> Union[str, Tuple[str, List[Any], str]]:
     """
     Canonicalizes a SMARTS pattern.
 
@@ -1372,7 +1425,9 @@ def canon_smarts(
     return out
 
 
-def gen_canon_repl_dict(repl_dict, embedding="drugbank"):
+def gen_canon_repl_dict(
+    repl_dict: Dict[str, str], embedding: Union[str, Dict[str, float]] = "drugbank"
+) -> Dict[str, str]:
     """
     Generate a canonical replacement dictionary based on a given replacement dictionary.
 
@@ -1383,21 +1438,34 @@ def gen_canon_repl_dict(repl_dict, embedding="drugbank"):
     Returns:
         dict: A dictionary containing the canonical replacement mappings.
     """
-    repl_dict_nodes = {}
+    repl_dict_nodes: Dict[str, str] = {}
     for k in repl_dict:
-        repl_dict_nodes[canon_smarts(k, embedding)[1:-1]] = canon_smarts(
-            repl_dict[k], embedding
+        # TODO: `embedding` is accidentally passed as the `mapping` positional argument
+        # to `canon_smarts`.  `canon_smarts(k, embedding)` sets `mapping=embedding`
+        # instead of `mapping=False, embedding=embedding`.  Fixing this will change
+        # behavior and should be done deliberately.
+        repl_dict_nodes[cast(str, canon_smarts(k, embedding))[1:-1]] = cast(
+            str, canon_smarts(repl_dict[k], embedding)
         )[1:-1]
     return repl_dict_nodes
 
 
-def debug(smarts, mapping=False, embedding="drugbank", return_score=False):
+def debug(
+    smarts: str,
+    mapping: bool = False,
+    embedding: Union[str, Dict[str, float]] = "drugbank",
+    return_score: bool = False,
+) -> None:
     canon_smarts(smarts, mapping, embedding, return_score, True)
 
 
 def canon_reaction_smarts(
-    smarts, mapping=False, embedding="drugbank", remapping=False, repl_dict={}
-):
+    smarts: str,
+    mapping: bool = False,
+    embedding: Union[str, Dict[str, float]] = "drugbank",
+    remapping: bool = False,
+    repl_dict: Dict[str, str] = {},
+) -> str:
     """
     Canonicalizes a reaction SMARTS string.
 
