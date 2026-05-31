@@ -1,11 +1,13 @@
-from rdcanon.main import canon_smarts, canon_reaction_smarts, random_smarts
+import time
+import timeit
+
+import numpy as np
+from matplotlib import pyplot as plt
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import timeit
-import time
-from matplotlib import pyplot as plt
 from sklearn.neighbors import KernelDensity
-import numpy as np
+
+from rdcanon.main import canon_reaction_smarts, canon_smarts, random_smarts
 
 
 def compare_reaction_outputs(reactant_objs_in, template_list, canon_template_list):

@@ -1,11 +1,14 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=45", "wheel", "mypy>=1.14,<2", "rdkit"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "rdcanon"
-version = "0.1.2"
+name = "rdcanon_plus"
+version = "0.1.0"
 authors = [{ name = "Babak Mahjour", email = "bmahjour@mit.edu" }]
+maintainers = [
+    {name = "Carson Britt", email = "carson.s.britt@gmail.com"}
+]
 description = "SMARTS Sanitization/Canonicalization"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -22,10 +25,30 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 license = { file = "LICENSE" }
 
 [project.urls]
-Homepage = "https://github.com/coleygroup/rdcanon"
-Issues = "https://github.com/coleygroup/rdcanon/issues"
+Homepage = "https://github.com/denovochem/rdcanon_plus/"
+Repository = "https://github.com/denovochem/rdcanon_plus/"
+Issues = "https://github.com/denovochem/rdcanon_plus/issues"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "jupyter>=1.1.1",
+    "mypy>=1.14.1",
+    "pandas>=2.3.3",
+    "pytest>=8.3.5",
+    "rdcanon>=0.1.2",
+    "ruff>=0.15.6",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "rdkit.*"
+follow_imports = "skip"

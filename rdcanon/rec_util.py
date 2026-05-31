@@ -1,9 +1,10 @@
+import re
 from collections import deque
 from functools import cmp_to_key
+
 import rdkit
 from rdkit import Chem
-import re
-from rdkit.Chem.rdchem import BondType, BondDir, BondStereo
+from rdkit.Chem.rdchem import BondDir, BondStereo, BondType
 
 bond_value_map = {
     "UNSPECIFIED": 1000,
@@ -261,7 +262,6 @@ class RecGraph:
                     neighbors_not_visited = neighbors_not_visited + 1
                 else:
                     if r.index != parent_index and parent_index != -1:
-
                         bond_sm = self.bond_indices_to_smarts[
                             (current_node.index, r.index)
                         ]

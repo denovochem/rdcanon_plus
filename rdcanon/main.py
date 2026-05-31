@@ -1,18 +1,20 @@
-from rdkit import Chem
-from rdkit.Chem import AllChem
+import random
 import re
+from collections import deque
+from functools import cmp_to_key
+
+import rdkit
+from rdkit import Chem, RDLogger
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import BondDir, BondStereo, BondType
+
+from rdcanon.askcos_prims import prims as prims1
 from rdcanon.token_parser import (
     order_token_canon,
-    recursive_compare,
     parse_smarts_total,
+    recursive_compare,
 )
-import rdkit
-from collections import deque
-from rdcanon.askcos_prims import prims as prims1
-import random
-from functools import cmp_to_key
-from rdkit.Chem.rdchem import BondType, BondDir, BondStereo
-from rdkit import RDLogger
+
 RDLogger.DisableLog("rdApp.*")
 
 bond_value_map = {
@@ -89,9 +91,9 @@ class Graph:
 
     def graph_from_smarts(self, smarts, embedding):
         proton_mol = Chem.MolFromSmiles("[#1]")
-        
+
         mol = Chem.MolFromSmarts(smarts)
-        
+
         if Chem.HasQueryHs(mol)[0]:
             mol = Chem.AdjustQueryProperties(Chem.MergeQueryHs(mol))
             # print(Chem.MolToSmarts(mol))
@@ -149,7 +151,7 @@ class Graph:
                     atom_map[0][0:-1],
                     embedding,
                     min_num_explicit_hs,
-                    opt_num_explicit_hs
+                    opt_num_explicit_hs,
                 )
             else:
                 sm, sc, _ = order_token_canon(
@@ -157,7 +159,7 @@ class Graph:
                     None,
                     embedding,
                     min_num_explicit_hs,
-                    opt_num_explicit_hs
+                    opt_num_explicit_hs,
                 )
 
             if self.v:
@@ -213,7 +215,6 @@ class Graph:
             bond_b = None
 
             if bond.GetStereo() != Chem.rdchem.BondStereo.STEREONONE:
-
                 atom = mol.GetAtomWithIdx(start_idx_o)
                 neighbors = atom.GetNeighbors()
 
@@ -666,7 +667,6 @@ class Graph:
             idxes_out.append(node.index)
             i = i + 1
 
-
         ###           ###
         ### Fix Bonds ###
         ###           ###
@@ -862,8 +862,6 @@ class Graph:
         ###    END    ###
         ### Fix Bonds ###
         ###           ###
-
-
 
         cw_ord = [0, 1, 2]
         ccw_ord = [0, 2, 1]

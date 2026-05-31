@@ -1,19 +1,20 @@
 import hashlib
+import re
 from collections import deque
-import networkx as nx
-import matplotlib.pyplot as plt
+from functools import cmp_to_key
+
 import matplotlib.colors as mcolors
-from matplotlib import gridspec
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 from lark import Lark, Transformer
+from matplotlib import gridspec
+
 from rdcanon.askcos_prims import prims as prims1
-from rdcanon.pubchem_prims import prims as prims2
 from rdcanon.drugbank_prims_with_nots import prims as prims3
 from rdcanon.np_prims import prims as prims4
-from functools import cmp_to_key
+from rdcanon.pubchem_prims import prims as prims2
 from rdcanon.rec_util import RecGraph
-import re
-
 
 # PRIMITIVE:  "D" | "H" | "h" | "R" | "r" | "v" | "X" | "x" | "-" | "+" | "#"
 #                | "*" | "a" | "A" | "@" | "@@"
@@ -187,7 +188,7 @@ labels = [
     "Ne",
     "Pm",
     "Pu",
-    "Xe"
+    "Xe",
 ]
 
 ATOMS = [
@@ -288,7 +289,7 @@ ATOMS = [
     "Ne",
     "Pm",
     "Pu",
-    "Xe"
+    "Xe",
 ]
 
 
@@ -608,7 +609,7 @@ class SMARTSTransformer2(Transformer):
                 "Lu": -1,
                 "Hf": -1,
                 "Ta": -1,
-                "W" : -1,
+                "W": -1,
                 "Re": -1,
                 "Co": -1,
                 "Os": -1,
@@ -667,7 +668,6 @@ class SMARTSTransformer2(Transformer):
             deg_found = False
             prev_prim = False
             for rr in atms:
-
                 if rr[0] == "!":
                     result["!"] = True
                     continue
@@ -1735,7 +1735,7 @@ def order_token_canon(
     # add "H" + num_explicit_hs to the root node 0
     # print(dg.edges, [dg.nodes[i] for i in dg.nodes])
     # print()
-    if min_num_explicit_hs != None and opt_num_explicit_hs==None:
+    if min_num_explicit_hs != None and opt_num_explicit_hs == None:
         dg.add_node(len(dg.nodes), label="H" + str(min_num_explicit_hs))
         dg.add_edge(len(dg.nodes) - 1, 0)
     elif min_num_explicit_hs != None and opt_num_explicit_hs != None:
@@ -1747,7 +1747,9 @@ def order_token_canon(
 
         dg.add_node(idx_new_1, label="H" + str(min_num_explicit_hs))
         dg.add_edge(idx_new_1, idx_new)
-        dg.add_node(idx_new_2, label="H" + str(opt_num_explicit_hs+min_num_explicit_hs))
+        dg.add_node(
+            idx_new_2, label="H" + str(opt_num_explicit_hs + min_num_explicit_hs)
+        )
         dg.add_edge(idx_new_2, idx_new)
     # print(dg.edges, [dg.nodes[i] for i in dg.nodes])
     # print(dg.nodes, [dg.nodes[i] for i in dg.nodes])
