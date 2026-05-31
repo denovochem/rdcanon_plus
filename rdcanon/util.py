@@ -15,8 +15,7 @@ def compare_reaction_outputs(
     template_list: List[Chem.rdChemReactions.ChemicalReaction],
     canon_template_list: List[Chem.rdChemReactions.ChemicalReaction],
 ) -> Tuple[int, int]:
-    correct, incorrect, failed = 0, 0, 0
-    ordered_arrs: List[Tuple[Chem.Mol, ...]] = []
+    correct, incorrect = 0, 0
     for i2, k in enumerate(template_list):
         ordered_noncanon = (reactant_objs_in[i2],)
         ordered_canon = (reactant_objs_in[i2],)
@@ -26,18 +25,18 @@ def compare_reaction_outputs(
 
         p1s = []
         p1sms = []
-        for l in p:
-            for ll in l:
-                p1s.append(ll)
-                sm_out = Chem.MolToSmiles(ll, isomericSmiles=False)
+        for reaction_result in p:
+            for product in reaction_result:
+                p1s.append(product)
+                sm_out = Chem.MolToSmiles(product, isomericSmiles=False)
                 p1sms.append(sm_out)
 
         p2s = []
         p2sms = []
-        for l in p2:
-            for ll in l:
-                p2s.append(ll)
-                sm_out = Chem.MolToSmiles(ll, isomericSmiles=False)
+        for reaction_result in p2:
+            for product in reaction_result:
+                p2s.append(product)
+                sm_out = Chem.MolToSmiles(product, isomericSmiles=False)
                 p2sms.append(sm_out)
 
         all_hit = True
@@ -68,21 +67,21 @@ def compare_products(reaction_template: str, reactants_in: str) -> bool:
 
     p1s = []
     p1sms = []
-    for l in p:
-        for ll in l:
-            Chem.SanitizeMol(ll)
-            p1s.append(ll)
-            sm_out = Chem.MolToSmiles(ll, isomericSmiles=False)
+    for reaction_result in p:
+        for product in reaction_result:
+            Chem.SanitizeMol(product)
+            p1s.append(product)
+            sm_out = Chem.MolToSmiles(product, isomericSmiles=False)
             sm_canon = Chem.CanonSmiles(sm_out)
             p1sms.append(sm_canon)
 
     p2s = []
     p2sms = []
-    for l in p2:
-        for ll in l:
-            Chem.SanitizeMol(ll)
-            p2s.append(ll)
-            sm_out = Chem.MolToSmiles(ll, isomericSmiles=False)
+    for reaction_result in p2:
+        for product in reaction_result:
+            Chem.SanitizeMol(product)
+            p2s.append(product)
+            sm_out = Chem.MolToSmiles(product, isomericSmiles=False)
             sm_canon = Chem.CanonSmiles(sm_out)
             p2sms.append(sm_canon)
 

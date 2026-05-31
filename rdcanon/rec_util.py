@@ -363,7 +363,7 @@ class RecGraph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -400,7 +400,7 @@ class RecGraph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -455,7 +455,7 @@ class RecGraph:
             path_ar = []
             for rr in r:
                 path_ar.append(rr[0].serialized_score)
-                if rr[1] == None:
+                if rr[1] is None:
                     bond_v = "None"
                 else:
                     bond_v = rr[1].name

@@ -453,12 +453,12 @@ class SMARTSTransformer2(Transformer):
             bond_symbs = ["-", "=", "#", "~", ":", ".", "@", "/", "\\"]
             op_symbs = ["!", "&", ",", ";"]
 
-            if reading == False:
+            if not reading:
                 # print("b", r)
                 if r in op_symbs or r in bond_symbs:
                     cur_bond = cur_bond + r
                     continue
-                if type(r[0]) == tuple and len(r) == 1:
+                if isinstance(r[0], tuple) and len(r) == 1:
                     if r[0][1][0][1][0] in bond_symbs:
                         cur_bond = cur_bond + r[0][1][0][1][0]
                         continue
@@ -469,7 +469,7 @@ class SMARTSTransformer2(Transformer):
                     atoms_in_seq.append(cur_atom)
                     cur_atom = ""
                     continue
-                elif type(r[0]) == tuple and len(r) == 2:
+                elif isinstance(r[0], tuple) and len(r) == 2:
                     cur_bond = cur_bond + r[0][1][0]
                     cur_atom = cur_atom + r[1][1][0][1][0]
 
@@ -610,11 +610,8 @@ class SMARTSTransformer2(Transformer):
                 "Lu": -1,
                 "Hf": -1,
                 "Ta": -1,
-                "W": -1,
                 "Re": -1,
-                "Co": -1,
                 "Os": -1,
-                "Re": -1,
                 "Ga": -1,
                 "Ge": -1,
                 "Y": -1,
@@ -629,7 +626,6 @@ class SMARTSTransformer2(Transformer):
                 "Ho": -1,
                 "Th": -1,
                 "Pa": -1,
-                "Mo": -1,
                 "U": -1,
                 "Tc": -1,
                 "At": -1,
@@ -949,11 +945,8 @@ class SMARTSTransformer(Transformer):
                     "Lu": -1,
                     "Hf": -1,
                     "Ta": -1,
-                    "W": -1,
                     "Re": -1,
-                    "Co": -1,
                     "Os": -1,
-                    "Re": -1,
                     "Ga": -1,
                     "Ge": -1,
                     "Y": -1,
@@ -968,7 +961,6 @@ class SMARTSTransformer(Transformer):
                     "Ho": -1,
                     "Th": -1,
                     "Pa": -1,
-                    "Mo": -1,
                     "U": -1,
                     "Tc": -1,
                     "At": -1,
@@ -1112,11 +1104,8 @@ class SMARTSTransformer(Transformer):
                 "Lu": -1,
                 "Hf": -1,
                 "Ta": -1,
-                "W": -1,
                 "Re": -1,
-                "Co": -1,
                 "Os": -1,
-                "Re": -1,
                 "Ga": -1,
                 "Ge": -1,
                 "Y": -1,
@@ -1131,7 +1120,6 @@ class SMARTSTransformer(Transformer):
                 "Ho": -1,
                 "Th": -1,
                 "Pa": -1,
-                "Mo": -1,
                 "U": -1,
                 "Tc": -1,
                 "At": -1,
@@ -1318,7 +1306,6 @@ def check_special_chars_outside_nested(
     """
     Check if "&" is in the string `sm`, but not inside `$( x )` structures.
     """
-    inside_nested = False
     found_chars = {"&": False}
     i = 0
 
@@ -1507,7 +1494,7 @@ def gen_data_substructure(
     hm: Any = []
     ops.append("")
     for rr in results:
-        if type(rr) == str:
+        if isinstance(rr, str):
             continue
         ar = []
         for x in x_toks:
@@ -1736,7 +1723,7 @@ def order_token_canon(
     elif embedding == "npatlas":
         prims = prims4
     else:
-        if type(embedding) == dict:
+        if isinstance(embedding, dict):
             prims = embedding
         else:
             raise ValueError(
@@ -1768,10 +1755,10 @@ def order_token_canon(
     # add "H" + num_explicit_hs to the root node 0
     # print(dg.edges, [dg.nodes[i] for i in dg.nodes])
     # print()
-    if min_num_explicit_hs != None and opt_num_explicit_hs == None:
+    if min_num_explicit_hs is not None and opt_num_explicit_hs is None:
         dg.add_node(len(dg.nodes), label="H" + str(min_num_explicit_hs))
         dg.add_edge(len(dg.nodes) - 1, 0)
-    elif min_num_explicit_hs != None and opt_num_explicit_hs != None:
+    elif min_num_explicit_hs is not None and opt_num_explicit_hs is not None:
         dg.add_node(len(dg.nodes), label=",")
         idx_new = len(dg.nodes) - 1
         dg.add_edge(idx_new, 0)
@@ -1886,6 +1873,6 @@ def order_token_canon(
             weights_in_order.append(these_weights)
 
     # print(dg.nodes)
-    if atom_map != None and len(atom_map) > 0:
+    if atom_map is not None and len(atom_map) > 0:
         return "[" + dg.nodes[0]["text"] + atom_map + "]", weights_in_order[-1], dg
     return "[" + dg.nodes[0]["text"] + "]", weights_in_order[-1], dg

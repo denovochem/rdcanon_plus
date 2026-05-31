@@ -97,8 +97,6 @@ class Graph:
     def graph_from_smarts(
         self, smarts: str, embedding: Union[str, Dict[str, float]]
     ) -> None:
-        proton_mol = Chem.MolFromSmiles("[#1]")
-
         mol = Chem.MolFromSmarts(smarts)
 
         if Chem.HasQueryHs(mol)[0]:
@@ -174,7 +172,7 @@ class Graph:
 
             single_score: Any = sc
             while True:
-                if type(single_score) == list or type(single_score) == tuple:
+                if isinstance(single_score, (list, tuple)):
                     single_score = single_score[0]
                 else:
                     break
@@ -456,7 +454,7 @@ class Graph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -490,7 +488,7 @@ class Graph:
                     np = []
                     for rr in new_path:
                         np.append(rr[0].serialized_score)
-                        if rr[1] == None:
+                        if rr[1] is None:
                             bond_v = "None"
                         else:
                             bond_v = rr[1].name
@@ -559,7 +557,7 @@ class Graph:
                 path_ar: List[Any] = []
                 for rr in r:
                     path_ar.append(rr[0].serialized_score)
-                    if rr[1] == None:
+                    if rr[1] is None:
                         bond_v = "None"
                     else:
                         bond_v = rr[1].name
@@ -1480,7 +1478,7 @@ def canon_reaction_smarts(
         str: The canonicalized reaction SMARTS string.
     """
 
-    if remapping == True:
+    if remapping:
         mapping = True
 
     reaction = Reaction(smarts, mapping, embedding, remapping, repl_dict=repl_dict)
